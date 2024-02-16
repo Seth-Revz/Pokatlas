@@ -2,10 +2,6 @@ from PIL import Image
 import os
 import re
 
-from PySide6.QtWidgets import QApplication
-from ui.mainwindow import MainWindow
-import qdarktheme
-
 def decomp(dirname: str):
     sprites = {}
 
@@ -104,8 +100,12 @@ if __name__ == '__main__':
     # decomp('default')
     # rebuild('default', use_modified=True)
 
+    from ui.mainwindow import MainWindow
+    from PySide6.QtWidgets import QApplication
+    import qdarktheme
+
     app = QApplication()
-    qdarktheme.setup_theme('auto')
+    qdarktheme.setup_theme('dark')
     mainwindow = MainWindow()
     mainwindow.show()
     app.exec()

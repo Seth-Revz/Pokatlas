@@ -5,6 +5,7 @@ from PySide6.QtWidgets import (
     QToolBar
 )
 
+from pokatlas import decomp
 
 WINDOW_WIDTH = 600
 WINDOW_HEIGHT = 400
@@ -18,13 +19,15 @@ class MainWindow(QMainWindow):
         self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
         toolbar = QToolBar('Main Toolbar')
-        toolbar.setIconSize(QSize(16,16))
+        # toolbar.setIconSize(QSize(16,16))
+        toolbar.setMovable(False)
+        toolbar.toggleViewAction().setEnabled(False)
         self.addToolBar(toolbar)
 
-        button_action = QAction('Open Atlas', self)
-        button_action.setStatusTip("This is your button")
-        button_action.triggered.connect(self.onMyToolBarButtonClick)
-        toolbar.addAction(button_action)
+        open_atlas_action = QAction('Open Atlas', self)
+        open_atlas_action.setStatusTip("This is your button")
+        open_atlas_action.triggered.connect(self.open_atlas_slot)
+        toolbar.addAction(open_atlas_action)
 
-    def onMyToolBarButtonClick(self, s):
-        print("click", s)
+    def open_atlas_slot(self):
+        decomp('default')
