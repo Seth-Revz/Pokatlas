@@ -2,10 +2,10 @@ from PIL import Image
 import os
 import re
 
-def decomp(dirname: str):
+def decomp(path: str):
     sprites = {}
 
-    with open(f'atlas/{dirname}/main.atlas', 'r') as f:
+    with open(path, 'r') as f:
         _ = f.readline().strip()
         atlas_file_name = f.readline().strip()
         atlas_size = f.readline().split(': ')[1].strip()
@@ -32,10 +32,11 @@ def decomp(dirname: str):
                     sprites[f'{sprite_name}_INDEX{value}'] = sprites.pop(key)
                     placeholder = False
 
-    atlas_full = Image.open(f'atlas/{dirname}/{atlas_file_name}')
+    dirname = '/'.join(path.strip().split('/')[:-1])
+    atlas_full = Image.open(f'{dirname}/{atlas_file_name}')
 
-    if not os.path.exists(f'atlas/{dirname}/sprites'):
-        os.makedirs(f'atlas/{dirname}/sprites')
+    if not os.path.exists(f'{dirname}/sprites'):
+        os.makedirs(f'{dirname}/sprites')
 
     for sprite_name, attributes in sprites.items():
 
@@ -46,12 +47,12 @@ def decomp(dirname: str):
 
         sprite = atlas_full.crop((left, top, right, bottom))
 
-        sprite.save(f'atlas/{dirname}/sprites/{sprite_name}.png')
+        sprite.save(f'{dirname}/sprites/{sprite_name}.png')
 
-def rebuild(dirname: str, use_modified=False):
+def rebuild(path: str, use_modified=False):
     sprites = {}
 
-    with open(f'atlas/{dirname}/main.atlas', 'r') as f:
+    with open(path, 'r') as f:
         _ = f.readline().strip()
         atlas_file_name = f.readline().strip()
         atlas_size = f.readline().split(': ')[1].strip()
@@ -78,19 +79,20 @@ def rebuild(dirname: str, use_modified=False):
                     sprites[f'{sprite_name}_INDEX{value}'] = sprites.pop(key)
                     placeholder = False
 
+    dirname = '/'.join(path.strip().split('/')[:-1])
     canvas = Image.new(re.sub(r'\d+', '', atlas_format), tuple(map(int, atlas_size.split(', '))), (255,255,255,0))
 
     for sprite_name, attributes in sprites.items():
         if use_modified and os.path.exists(f'atlas/modified_sprites/{sprite_name}.png'):
             sprite = Image.open(f'atlas/modified_sprites/{sprite_name}.png')
         else:
-            sprite = Image.open(f'atlas/{dirname}/sprites/{sprite_name}.png')
+            sprite = Image.open(f'{dirname}/sprites/{sprite_name}.png')
         canvas.paste(sprite, tuple(map(int, attributes['xy'].split(', '))))
     
-    if not os.path.exists(f'atlas/{dirname}/reconstructed'):
-        os.makedirs(f'atlas/{dirname}/reconstructed')
+    if not os.path.exists(f'{dirname}/reconstructed'):
+        os.makedirs(f'{dirname}/reconstructed')
 
-    canvas.save(f'atlas/{dirname}/reconstructed/{atlas_file_name}')
+    canvas.save(f'{dirname}/reconstructed/{atlas_file_name}')
 
 if __name__ == '__main__':
     # dirs = [ d.name for d in os.scandir(f'atlas') if d.is_dir() and d.name != 'modified_sprites']
