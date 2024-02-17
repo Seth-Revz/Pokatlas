@@ -1,8 +1,12 @@
 from PySide6.QtCore import QSize
-from PySide6.QtGui import QAction, QIcon
+from PySide6.QtGui import (
+    QAction, 
+    QIcon
+)
 from PySide6.QtWidgets import (
     QMainWindow,
-    QToolBar
+    QToolBar,
+    QFileDialog
 )
 
 from pokatlas import decomp
@@ -30,4 +34,5 @@ class MainWindow(QMainWindow):
         toolbar.addAction(open_atlas_action)
 
     def open_atlas_slot(self):
-        decomp('default')
+        filename = QFileDialog.getOpenFileName(self, 'Open main.atlas')[0]
+        
