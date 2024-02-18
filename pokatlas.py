@@ -49,7 +49,7 @@ def decomp(path: str):
 
         sprite.save(f'{dirname}/sprites/{sprite_name}.png')
 
-def rebuild(path: str, use_modified=False):
+def rebuild(path: str):
     sprites = {}
 
     with open(path, 'r') as f:
@@ -83,16 +83,13 @@ def rebuild(path: str, use_modified=False):
     canvas = Image.new(re.sub(r'\d+', '', atlas_format), tuple(map(int, atlas_size.split(', '))), (255,255,255,0))
 
     for sprite_name, attributes in sprites.items():
-        if use_modified and os.path.exists(f'atlas/modified_sprites/{sprite_name}.png'):
-            sprite = Image.open(f'atlas/modified_sprites/{sprite_name}.png')
-        else:
-            sprite = Image.open(f'{dirname}/sprites/{sprite_name}.png')
+        sprite = Image.open(f'{dirname}/sprites/{sprite_name}.png')
         canvas.paste(sprite, tuple(map(int, attributes['xy'].split(', '))))
     
-    if not os.path.exists(f'{dirname}/reconstructed'):
-        os.makedirs(f'{dirname}/reconstructed')
+    if not os.path.exists(f'{dirname}/output'):
+        os.makedirs(f'{dirname}/output')
 
-    canvas.save(f'{dirname}/reconstructed/{atlas_file_name}')
+    canvas.save(f'{dirname}/output/{atlas_file_name}')
 
 if __name__ == '__main__':
     # dirs = [ d.name for d in os.scandir(f'atlas') if d.is_dir() and d.name != 'modified_sprites']
