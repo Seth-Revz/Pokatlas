@@ -1,4 +1,10 @@
-from PySide6.QtCore import Qt, QSize, QFile, QUrl, QProcess
+from PySide6.QtCore import (
+    Qt,
+    QSize,
+    QFile,
+    QProcess,
+    QDir
+)
 
 from PySide6.QtGui import (
     QAction, 
@@ -18,7 +24,8 @@ from PySide6.QtWidgets import (
     QHBoxLayout,
     QStyledItemDelegate, 
     QFileIconProvider,
-    QSizePolicy
+    QSizePolicy,
+    QMessageBox
 )
 
 from pokatlas import decomp, rebuild
@@ -110,7 +117,7 @@ class MainWindow(QMainWindow):
         self.toolbar.addAction(self.open_atlas_action)
 
         self.replace_action = QAction('Replace Sprite', self)
-        self.replace_action.triggered.connect(self.replace_sprite)
+        self.replace_action.triggered.connect(self.single_replace_sprite)
         self.replace_action.setVisible(False)
         self.toolbar.addAction(self.replace_action)
 
@@ -222,7 +229,7 @@ class MainWindow(QMainWindow):
         self.sprite_image_label.setPixmap(pixmap.scaled(QSize(pixmap.size().width() * ratio, pixmap.size().height() * ratio), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.FastTransformation))
         self.sprite_image_label.setScaledContents(False)
 
-    def replace_sprite(self, idx):
+    def single_replace_sprite(self, idx):
         size = QPixmap(f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}').size()
         replacement_filename = QFileDialog.getOpenFileName(self, f'Select Replacement {self.selected_sprite_filename} - Size {size.width()}x{size.height()}')[0]
         
@@ -246,12 +253,41 @@ class MainWindow(QMainWindow):
         self.open_directory(f'{self.atlas_dir}/sprites')
 
     def mass_replace_sprites(self):
-        pass
+        msgbox = QMessageBox()
+        msgbox.setText('Matching Sprite File Names' + ' '*30)
+        msgbox.setInformativeText('Only files in the selected folder with names matching the dumped sprites will be replaced.')
+        msgbox.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
+        msgbox.setDefaultButton(QMessageBox.StandardButton.Ok)
+        msgbox_return = msgbox.exec()
+
+        if msgbox_return == QMessageBox.StandardButton.Cancel:
+            return
+        
+        mass_replacement_folder = QFileDialog.getExistingDirectory(self, 'Select replacement sprites directory', self.atlas_dir)
+
+        print(mass_replacement_folder)
+
+        sprite_qdir = QDir(self.atlas_dir + '/sprites')
+        sprite_files = sprite_qdir.entryList(filters=QDir.Filter.NoDotAndDotDot | QDir.Filter.AllEntries)
+        replacement_qdir = QDir(mass_replacement_folder)
+        replacement_files = replacement_qdir.entryList(filters=QDir.Filter.NoDotAndDotDot | QDir.Filter.AllEntries)
+        print(replacement_files)
+
+        for f in replacement_files:
+            if f in sprite_files:
+                print(f)
+                # TODO Replace Sprite
+
 
     def open_directory(self, path: str):
         platform_os = platform.system()
         if platform_os == 'Windows':
             windows_is_shit = path.replace('/', '\\')
             QProcess.startDetached(f'explorer', arguments=[f"\e,{windows_is_shit}"])
-        ## TODO - Test on linux
-        # QDesktopServices.openUrl(QUrl.fromLocalFile(f'file:///{self.atlas_dir}/sprites'))
+        elif platform_os == 'Linux':
+            QDesktopServices.openUrl(path)
+        elif platform_os == 'Darwin':
+            #No mac to test this so.
+            QDesktopServices.openUrl(path)
+        else:
+            print('tf you running this on')
