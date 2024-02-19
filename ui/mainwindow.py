@@ -140,8 +140,6 @@ class MainWindow(QMainWindow):
         self.mass_replace_action.setVisible(False)
         self.toolbar.addAction(self.mass_replace_action)
 
-        # self.test_atlas()
-
     def display_atlas(self):
         widget = QWidget(self)
         model = QFileSystemModel()
@@ -195,19 +193,6 @@ class MainWindow(QMainWindow):
         rebuild(self.atlas_file)
         self.open_directory(f'{self.atlas_dir}/output')
 
-    def test_atlas(self):
-        self.atlas_file = 'C:/Users/Seth/Coding/Python/Pokatlas/atlas/default/main.atlas'
-
-        # self.atlas_file = '/home/seth/coding/pokatlas/atlas/default/main.atlas'
-        self.atlas_dir = '/'.join(self.atlas_file.strip().split('/')[:-1])
-        decomp(self.atlas_file)
-        self.display_atlas()
-
-        if not self.open_sprite_folder_action.isVisible():
-            self.open_sprite_folder_action.setVisible(True)
-        if not self.mass_replace_action.isVisible():
-            self.mass_replace_action.setVisible(True)
-
     def list_clicked(self, current_selection, previous_selection):
         
         if not self.replace_action.isVisible():
@@ -237,17 +222,9 @@ class MainWindow(QMainWindow):
             return
         
         self.current_replacement_file = replacement_filename
-        
-        if not QFile.exists(f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}') or QFile.remove(f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}'):
-            if not QFile.copy(self.current_replacement_file, f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}'):
-                print('Could not copy file')
-        else:
-            print('Could not remove file')
-        
-        self.refresh_sprite_preview()
 
-        if not self.save_atlas_action.isVisible():
-            self.save_atlas_action.setVisible(True)
+        self.replace_sprite(self.current_replacement_file, f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}')
+        self.refresh_sprite_preview()
 
     def open_sprite_folder(self):
         self.open_directory(f'{self.atlas_dir}/sprites')
@@ -265,19 +242,28 @@ class MainWindow(QMainWindow):
         
         mass_replacement_folder = QFileDialog.getExistingDirectory(self, 'Select replacement sprites directory', self.atlas_dir)
 
-        print(mass_replacement_folder)
-
         sprite_qdir = QDir(self.atlas_dir + '/sprites')
         sprite_files = sprite_qdir.entryList(filters=QDir.Filter.NoDotAndDotDot | QDir.Filter.AllEntries)
         replacement_qdir = QDir(mass_replacement_folder)
         replacement_files = replacement_qdir.entryList(filters=QDir.Filter.NoDotAndDotDot | QDir.Filter.AllEntries)
-        print(replacement_files)
 
         for f in replacement_files:
             if f in sprite_files:
-                print(f)
-                # TODO Replace Sprite
+                self.replace_sprite(f'{mass_replacement_folder}/{f}', f'{self.atlas_dir}/sprites/{f}')
 
+        self.refresh_sprite_preview()
+
+    def replace_sprite(self, src: str, dst: str):
+        if not QFile.exists(dst) or QFile.remove(dst):
+            if not QFile.copy(src, dst):
+                print('Could not copy file')
+                return False
+            else:
+                if not self.save_atlas_action.isVisible():
+                    self.save_atlas_action.setVisible(True)
+        else:
+            print('Could not remove file')
+            return False
 
     def open_directory(self, path: str):
         platform_os = platform.system()
