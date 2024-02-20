@@ -1,17 +1,18 @@
 from PySide6.QtCore import (
     Qt,
-    QSize,
+    QDir,
     QFile,
+    QPoint,
     QProcess,
-    QDir
+    QSize,
 )
 
 from PySide6.QtGui import (
-    QAction, 
+    QAction,
+    QDesktopServices,
     QIcon,
     QPixmap, 
     QResizeEvent,
-    QDesktopServices,
 )
 from PySide6.QtWidgets import (
     QMainWindow,
@@ -22,10 +23,11 @@ from PySide6.QtWidgets import (
     QFileSystemModel,
     QListView,
     QHBoxLayout,
+    QVBoxLayout,
     QStyledItemDelegate, 
     QFileIconProvider,
     QSizePolicy,
-    QMessageBox
+    QMessageBox,
 )
 
 from pokatlas import decomp, rebuild
@@ -107,7 +109,6 @@ class MainWindow(QMainWindow):
         self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
         self.toolbar = QToolBar('Main Toolbar')
-        # self.toolbar.setIconSize(QSize(16,16))
         self.toolbar.setMovable(False)
         self.toolbar.toggleViewAction().setEnabled(False)
         self.addToolBar(self.toolbar)
@@ -140,15 +141,30 @@ class MainWindow(QMainWindow):
         self.mass_replace_action.setVisible(False)
         self.toolbar.addAction(self.mass_replace_action)
 
+        widget = QWidget(self)
+        layout = QVBoxLayout(widget)
+
+        label = QLabel()
+        label.setText("<font color='grey'>Open main.atlas<br /><br />Replace Sprites<br /><br />Save Spritesheet</font>")
+        label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+
+        font = self.font()
+        font.setPointSize(13)
+        label.setFont(font)
+
+        layout.addWidget(label, alignment=Qt.AlignmentFlag.AlignCenter)
+        self.setCentralWidget(widget)
+
+
     def display_atlas(self):
         widget = QWidget(self)
-        model = QFileSystemModel()
-        model.setIconProvider(EmptyIconProvider())
-        model.setRootPath(f'{self.atlas_dir}/sprites')
+        self.model = QFileSystemModel()
+        self.model.setIconProvider(EmptyIconProvider())
+        self.model.setRootPath(f'{self.atlas_dir}/sprites')
 
         self.sprite_list = QListView()
-        self.sprite_list.setModel(model)
-        self.sprite_list.setRootIndex(model.index(f'{self.atlas_dir}/sprites'))
+        self.sprite_list.setModel(self.model)
+        self.sprite_list.setRootIndex(self.model.index(f'{self.atlas_dir}/sprites'))
         delegate = NameDelegate(self.sprite_list)
         self.sprite_list.setItemDelegate(delegate)
         self.sprite_list.setViewMode(QListView.ViewMode.ListMode)
@@ -166,7 +182,6 @@ class MainWindow(QMainWindow):
 
         layout.addWidget(self.sprite_image_label, 2, alignment=Qt.AlignmentFlag.AlignCenter)
         self.setCentralWidget(widget)
-
 
         if self.replace_action.isVisible():
             self.replace_action.setVisible(False)
@@ -188,6 +203,8 @@ class MainWindow(QMainWindow):
         self.atlas_dir = '/'.join(self.atlas_file.strip().split('/')[:-1])
         decomp(self.atlas_file)
         self.display_atlas()
+        
+        self.sprite_list.setCurrentIndex(self.sprite_list.indexAt(QPoint(0,0)))
 
     def save_atlas(self):
         rebuild(self.atlas_file)
@@ -199,7 +216,7 @@ class MainWindow(QMainWindow):
             self.replace_action.setVisible(True)
 
         self.selected_sprite_filename = current_selection.data()
-
+        
         self.refresh_sprite_preview()
 
     def refresh_sprite_preview(self):
