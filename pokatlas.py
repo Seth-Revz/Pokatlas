@@ -92,13 +92,6 @@ def rebuild(path: str):
     canvas.save(f'{dirname}/output/{atlas_file_name}')
 
 if __name__ == '__main__':
-    # dirs = [ d.name for d in os.scandir(f'atlas') if d.is_dir() and d.name != 'modified_sprites']
-    # for dir in dirs:
-    #     decomp(dir)
-
-    # decomp('default')
-    # rebuild('default', use_modified=True)
-
     from ui.mainwindow import MainWindow
     from PySide6.QtWidgets import QApplication
     import qdarktheme

@@ -267,6 +267,7 @@ class MainWindow(QMainWindow):
         for f in replacement_files:
             if f in sprite_files:
                 self.replace_sprite(f'{mass_replacement_folder}/{f}', f'{self.atlas_dir}/sprites/{f}')
+                self.sprite_list.setCurrentIndex(self.model.index(f'{self.atlas_dir}/sprites/{f}'))
 
         self.refresh_sprite_preview()
 
