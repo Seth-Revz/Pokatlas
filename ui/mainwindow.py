@@ -248,6 +248,8 @@ class MainWindow(QMainWindow):
 
     def mass_replace_sprites(self):
         msgbox = QMessageBox()
+        msgbox.setWindowIcon(QIcon('./ui/icon.png'))
+        msgbox.setWindowTitle('Warning')
         msgbox.setText('Matching Sprite File Names' + ' '*30)
         msgbox.setInformativeText('Only files in the selected folder with names matching the dumped sprites will be replaced.')
         msgbox.setStandardButtons(QMessageBox.StandardButton.Ok | QMessageBox.StandardButton.Cancel)
