@@ -5,6 +5,7 @@ from PySide6.QtCore import (
     QPoint,
     QProcess,
     QSize,
+    QSortFilterProxyModel,
 )
 
 from PySide6.QtGui import (
@@ -21,6 +22,7 @@ from PySide6.QtWidgets import (
     QToolBar,
     QFileDialog,
     QFileSystemModel,
+    QLineEdit,
     QListView,
     QHBoxLayout,
     QVBoxLayout,
@@ -160,27 +162,54 @@ class MainWindow(QMainWindow):
         widget = QWidget(self)
         self.model = QFileSystemModel()
         self.model.setIconProvider(EmptyIconProvider())
-        self.model.setRootPath(f'{self.atlas_dir}/sprites')
+        self.model_root_path = self.model.setRootPath(f'{self.atlas_dir}/sprites')
+
+        self.proxy_model = QSortFilterProxyModel()
+        self.proxy_model.setSourceModel(self.model)
+        self.proxy_model.setFilterCaseSensitivity(Qt.CaseSensitivity.CaseInsensitive)
 
         self.sprite_list = QListView()
-        self.sprite_list.setModel(self.model)
-        self.sprite_list.setRootIndex(self.model.index(f'{self.atlas_dir}/sprites'))
+        self.sprite_list.setModel(self.proxy_model)
+        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(f'{self.atlas_dir}/sprites')))
         delegate = NameDelegate(self.sprite_list)
         self.sprite_list.setItemDelegate(delegate)
         self.sprite_list.setViewMode(QListView.ViewMode.ListMode)
         self.sprite_list.setResizeMode(QListView.ResizeMode.Adjust)
         self.sprite_list.setMinimumWidth(WINDOW_WIDTH // 3.5)
         self.sprite_list.selectionModel().currentChanged.connect(self.list_clicked)
+        self.sprite_list.doubleClicked.connect(self.single_replace_sprite)
 
-        layout = QHBoxLayout(widget)
-        layout.addWidget(self.sprite_list, alignment=Qt.AlignmentFlag.AlignLeft)
+        self.search_edit = QLineEdit()
+        self.search_edit.setPlaceholderText('Filter')
+        self.search_edit.setClearButtonEnabled(True)
+        self.search_edit.setMinimumWidth(WINDOW_WIDTH // 3.5)
+        self.search_edit.setMaximumWidth(WINDOW_WIDTH // 3)
+        self.search_edit.textEdited.connect(self.search_list)
+
+        file_vbox = QVBoxLayout()
+        file_vbox.addWidget(self.search_edit)
+        file_vbox.addWidget(self.sprite_list)
 
         self.sprite_image_label = Label() 
         pixmap = QPixmap(f'{self.atlas_dir}/main.png')
         self.sprite_image_label.setPixmap(pixmap.scaled(QSize(WINDOW_WIDTH, WINDOW_HEIGHT), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
         self.sprite_image_label.setScaledContents(True)
+        self.sprite_image_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        self.size_label = QLabel()
+        self.size_label.setStyleSheet("QLabel{font-size: 14pt;}")
+        self.size_label.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Maximum)
+        self.size_label.setScaledContents(True)
+        self.size_label.setAlignment(Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignBottom)
 
-        layout.addWidget(self.sprite_image_label, 2, alignment=Qt.AlignmentFlag.AlignCenter)
+        label_vbox = QVBoxLayout()
+        label_vbox.addWidget(self.sprite_image_label, alignment=Qt.AlignmentFlag.AlignCenter)
+        label_vbox.addWidget(self.size_label, Qt.AlignmentFlag.AlignCenter|Qt.AlignmentFlag.AlignBottom)
+
+        layout = QHBoxLayout(widget)
+        layout.addLayout(file_vbox)
+        layout.addLayout(label_vbox, 2)
+
         self.setCentralWidget(widget)
 
         if self.replace_action.isVisible():
@@ -210,37 +239,47 @@ class MainWindow(QMainWindow):
         rebuild(self.atlas_file)
         self.open_directory(f'{self.atlas_dir}/output')
 
+    def search_list(self, text):
+        self.proxy_model.setFilterFixedString(text)
+        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(f'{self.atlas_dir}/sprites')))
+
     def list_clicked(self, current_selection, previous_selection):
         
         if not self.replace_action.isVisible():
             self.replace_action.setVisible(True)
 
         self.selected_sprite_filename = current_selection.data()
+        self.selected_sprite_fullpath = self.model.filePath(self.proxy_model.mapToSource(current_selection))
+        self.selected_sprite_size = QPixmap(self.selected_sprite_fullpath).size()
         
         self.refresh_sprite_preview()
 
     def refresh_sprite_preview(self):
-        pixmap = QPixmap(f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}')
-        if pixmap.size().width() <= 50:
-            ratio = 7
-        elif pixmap.size().width() <= 60:
-            ratio = 6
-        else:
-            ratio = 5
+        if not self.selected_sprite_fullpath:
+            return
+        pixmap = QPixmap(self.selected_sprite_fullpath)
+        w = pixmap.width()
+        ratio = 1
+        while w > 1600:
+            ratio += 1
+            w = pixmap.width() // ratio
 
-        self.sprite_image_label.setPixmap(pixmap.scaled(QSize(pixmap.size().width() * ratio, pixmap.size().height() * ratio), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.FastTransformation))
+        self.selected_sprite_size = pixmap.size()
+        self.sprite_image_label.setPixmap(pixmap.scaled(QSize(pixmap.size().width() / ratio, pixmap.size().height()), Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.FastTransformation))
         self.sprite_image_label.setScaledContents(False)
+        self.size_label.setText(f'{self.selected_sprite_size.width()} x {self.selected_sprite_size.height()}')
 
     def single_replace_sprite(self, idx):
-        size = QPixmap(f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}').size()
-        replacement_filename = QFileDialog.getOpenFileName(self, f'Select Replacement {self.selected_sprite_filename} - Size {size.width()}x{size.height()}')[0]
-        
+        if not self.selected_sprite_filename:
+            return
+
+        replacement_filename = QFileDialog.getOpenFileName(self, f'Select Replacement {self.selected_sprite_filename}')[0]        
         if replacement_filename == '':
             return
         
         self.current_replacement_file = replacement_filename
 
-        self.replace_sprite(self.current_replacement_file, f'{self.atlas_dir}/sprites/{self.selected_sprite_filename}')
+        self.replace_sprite(self.current_replacement_file, self.selected_sprite_fullpath)
         self.refresh_sprite_preview()
 
     def open_sprite_folder(self):
@@ -269,7 +308,7 @@ class MainWindow(QMainWindow):
         for f in replacement_files:
             if f in sprite_files:
                 self.replace_sprite(f'{mass_replacement_folder}/{f}', f'{self.atlas_dir}/sprites/{f}')
-                self.sprite_list.setCurrentIndex(self.model.index(f'{self.atlas_dir}/sprites/{f}'))
+                self.sprite_list.setCurrentIndex(self.proxy_model.mapFromSource(self.model.index(f'{self.atlas_dir}/sprites/{f}')))
 
         self.refresh_sprite_preview()
 
