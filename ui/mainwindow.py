@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from pokatlas import decomp, rebuild
+from pokatlas import decomp, rebuild, get_atlas
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 400
@@ -111,6 +111,8 @@ class MainWindow(QMainWindow):
         self.atlas_dir = None
         self.sprites_dir = None
         self.output_dir = None
+        self.atlas = None
+
         self.selected_sprite_filename = None
 
         self.setupUI()
@@ -171,7 +173,7 @@ class MainWindow(QMainWindow):
         widget = QWidget(self)
         self.model = QFileSystemModel()
         self.model.setIconProvider(EmptyIconProvider())
-        self.model_root_path = self.model.setRootPath(self.sprites_dir)
+        self.model_root_path = self.model.setRootPath(str(self.sprites_dir))
 
         self.proxy_model = QSortFilterProxyModel()
         self.proxy_model.setSourceModel(self.model)
@@ -180,7 +182,7 @@ class MainWindow(QMainWindow):
 
         self.sprite_list = QListView()
         self.sprite_list.setModel(self.proxy_model)
-        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(self.sprites_dir)))
+        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(str(self.sprites_dir))))
         delegate = NameDelegate(self.sprite_list)
         self.sprite_list.setItemDelegate(delegate)
         self.sprite_list.setViewMode(QListView.ViewMode.ListMode)
@@ -256,11 +258,13 @@ class MainWindow(QMainWindow):
         if atlas_filename == '':
             return
 
-        self.atlas_file = atlas_filename
-        self.atlas_dir = '/'.join(self.atlas_file.strip().split('/')[:-1])
-        self.sprites_dir = f'{self.atlas_dir}/sprites'
-        self.output_dir = f'{self.atlas_dir}/output'
-        decomp(self.atlas_file)
+        self.atlas_filepath = pathlib.Path(atlas_filename)
+        self.atlas_dir = self.atlas_filepath.parent
+        self.sprites_dir = self.atlas_dir / 'sprites'
+        self.output_dir = self.atlas_dir / 'output'
+        
+        self.atlas = get_atlas(self.atlas_filepath)
+        decomp(self.atlas)
         self.displayAtlas()
 
         for file_str in QDir(self.sprites_dir).entryList():
@@ -269,12 +273,12 @@ class MainWindow(QMainWindow):
         self.sprite_list.setCurrentIndex(self.sprite_list.indexAt(QPoint(0,0)))
 
     def saveAtlas(self):
-        rebuild(self.atlas_file)
-        self.openDirectory(pathlib.Path(self.output_dir))
+        rebuild(self.atlas)
+        self.openDirectory(self.output_dir)
 
     def searchList(self, text):
         self.proxy_model.setFilterFixedString(text)
-        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(self.sprites_dir)))
+        self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(str(self.sprites_dir))))
 
     def listClicked(self, current_selection, previous_selection):
         
@@ -327,7 +331,7 @@ class MainWindow(QMainWindow):
         self.refreshSpritePreview()
 
     def openSpriteFolder(self):
-        self.openDirectory(pathlib.Path(self.sprites_dir))
+        self.openDirectory(self.sprites_dir)
 
     def replaceMultipleSprites(self):
         msgbox = QMessageBox()
@@ -342,7 +346,7 @@ class MainWindow(QMainWindow):
         if msgbox_return == QMessageBox.StandardButton.Cancel:
             return
         
-        mass_replacement_folder = QFileDialog.getExistingDirectory(self, 'Select replacement sprites directory', self.atlas_dir)
+        mass_replacement_folder = QFileDialog.getExistingDirectory(self, 'Select replacement sprites directory', str(self.atlas_dir))
 
         sprite_qdir = QDir(self.sprites_dir)
         sprite_files = sprite_qdir.entryList(filters=QDir.Filter.NoDotAndDotDot | QDir.Filter.AllEntries)

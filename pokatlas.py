@@ -1,95 +1,75 @@
 from PIL import Image
-import os
-import re
+import pathlib
 
-def decomp(path: str):
-    sprites = {}
 
-    with open(path, 'r') as f:
-        _ = f.readline().strip()
-        atlas_file_name = f.readline().strip()
-        atlas_size = f.readline().split(': ')[1].strip()
-        atlas_format = f.readline().split(': ')[1].strip()
-        atlas_filter = f.readline().split(': ')[1].strip()
-        atlas_repeat = f.readline().split(': ')[1].strip()
-        placeholder = False
+class Atlas():
+    def __init__(self, atlas_path: pathlib.Path, img_name: str, img_size: str, img_format: str, img_filter: str, repeat: str):
+        self.atlas_path = atlas_path
+        self.img_name = img_name
+        self.img_size = img_size
+        self.img_format = img_format
+        self.img_filter = img_filter
+        self.repeat = repeat
+        self.sprites = {}
+    
+    def add_sprite(self, name, attributes):
+        self.sprites[name] = attributes
 
-        for line in f.readlines():
-            line = line.strip()
-            if ':' not in line:
-                sprite_name = line
-                if sprite_name in sprites.keys():
-                    key = f'{sprite_name}placeholder'
-                    sprites[key] = {}
-                    placeholder = True
-                else:
-                    key = sprite_name
-                    sprites[key] = {}
-            else:
-                name, value = line.strip().split(': ')
-                sprites[key][name] = value
-                if placeholder and name == 'index':
-                    sprites[f'{sprite_name}_INDEX{value}'] = sprites.pop(key)
-                    placeholder = False
+    def get_sprites(self) -> dict:
+        return self.sprites
+    
 
-    dirname = '/'.join(path.strip().split('/')[:-1])
-    atlas_full = Image.open(f'{dirname}/{atlas_file_name}')
+def get_atlas(path: pathlib.Path) -> Atlas:
+    t = path.read_text().strip().split('\n')
 
-    if not os.path.exists(f'{dirname}/sprites'):
-        os.makedirs(f'{dirname}/sprites')
+    atlas = Atlas(path.absolute(), *[ t.strip().split(': ')[1] if ': ' in t else t for t in t[:5] ])
 
-    for sprite_name, attributes in sprites.items():
+    for line in t[5:]:
+        line = line.strip()
+
+        if ':' not in line:
+            sprite_name = line
+            attributes = {}
+        else:
+            name, value = line.strip().split(': ')
+            attributes[name] = value
+
+            if name == 'index':
+                if int(value) >= 0:
+                    sprite_name = f'{sprite_name}_{value}'
+
+                atlas.add_sprite(sprite_name, attributes)
+
+    return atlas
+
+def decomp(atlas: Atlas):
+    atlas_dir = atlas.atlas_path.parent
+    atlas_img = Image.open(atlas_dir / atlas.img_name)
+    sprites_dir = atlas_dir / 'sprites'
+    sprites_dir.mkdir(exist_ok=True)
+    
+    for sprite_name, attributes in atlas.get_sprites().items():
 
         left = int(attributes['xy'].split(', ')[0])
         top = int(attributes['xy'].split(', ')[1])
         right = left + int(attributes['size'].split(', ')[0])
         bottom = top + int(attributes['size'].split(', ')[1])
 
-        sprite = atlas_full.crop((left, top, right, bottom))
+        sprite = atlas_img.crop((left, top, right, bottom))
 
-        sprite.save(f'{dirname}/sprites/{sprite_name}.png')
+        sprite.save(sprites_dir / f'{sprite_name}.png')
+        
+def rebuild(atlas: Atlas):
+    canvas = Image.new('RGBA', tuple(map(int, atlas.img_size.split(', '))), (255,255,255,0))
 
-def rebuild(path: str):
-    sprites = {}
-
-    with open(path, 'r') as f:
-        _ = f.readline().strip()
-        atlas_file_name = f.readline().strip()
-        atlas_size = f.readline().split(': ')[1].strip()
-        atlas_format = f.readline().split(': ')[1].strip()
-        atlas_filter = f.readline().split(': ')[1].strip()
-        atlas_repeat = f.readline().split(': ')[1].strip()
-        placeholder = False
-
-        for line in f.readlines():
-            line = line.strip()
-            if ':' not in line:
-                sprite_name = line
-                if sprite_name in sprites.keys():
-                    key = f'{sprite_name}placeholder'
-                    sprites[key] = {}
-                    placeholder = True
-                else:
-                    key = sprite_name
-                    sprites[key] = {}
-            else:
-                name, value = line.strip().split(': ')
-                sprites[key][name] = value
-                if placeholder and name == 'index':
-                    sprites[f'{sprite_name}_INDEX{value}'] = sprites.pop(key)
-                    placeholder = False
-
-    dirname = '/'.join(path.strip().split('/')[:-1])
-    canvas = Image.new(re.sub(r'\d+', '', atlas_format), tuple(map(int, atlas_size.split(', '))), (255,255,255,0))
-
-    for sprite_name, attributes in sprites.items():
-        sprite = Image.open(f'{dirname}/sprites/{sprite_name}.png')
+    for sprite_name, attributes in atlas.get_sprites().items():
+        sprite = Image.open(atlas.atlas_path.parent / 'sprites' / f'{sprite_name}.png')
         canvas.paste(sprite, tuple(map(int, attributes['xy'].split(', '))))
     
-    if not os.path.exists(f'{dirname}/output'):
-        os.makedirs(f'{dirname}/output')
+    output_dir = atlas.atlas_path.parent / 'output'
+    output_dir.mkdir(exist_ok=True)
 
-    canvas.save(f'{dirname}/output/{atlas_file_name}')
+    canvas.save(output_dir / atlas.img_name)
 
 if __name__ == '__main__':
     from ui.mainwindow import MainWindow
