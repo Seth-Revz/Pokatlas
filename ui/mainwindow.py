@@ -38,7 +38,7 @@ from PySide6.QtWidgets import (
     QMessageBox,
 )
 
-from pokatlas import decomp, rebuild, get_atlas
+from pokatlas import decomp, check_duplicates, rebuild, get_atlas
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 400
@@ -273,6 +273,7 @@ class MainWindow(QMainWindow):
         self.sprite_list.setCurrentIndex(self.sprite_list.indexAt(QPoint(0,0)))
 
     def saveAtlas(self):
+        check_duplicates(self.atlas)
         rebuild(self.atlas)
         self.openDirectory(self.output_dir)
 
