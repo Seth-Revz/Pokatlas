@@ -17,12 +17,12 @@ class Atlas():
     
     def add_sprite(self, name, attributes):
         self.sprites[name] = attributes
-
-    def get_sprites(self) -> dict:
-        return self.sprites
     
     def add_sprite_hash(self, name, hash):
         self.sprite_hashes[name] = hash
+
+    def get_sprites(self) -> dict:
+        return self.sprites
 
 def get_atlas(path: pathlib.Path) -> Atlas:
     t = path.read_text().strip().split('\n')
@@ -48,8 +48,7 @@ def get_atlas(path: pathlib.Path) -> Atlas:
     return atlas
 
 def get_image_hash(image_path: pathlib.Path) -> str:
-    with open(image_path, "rb") as f:
-        return hashlib.md5(f.read()).hexdigest()
+    return hashlib.md5(image_path.read_bytes()).hexdigest()
 
 def decomp(atlas: Atlas):
     atlas_dir = atlas.atlas_path.parent
