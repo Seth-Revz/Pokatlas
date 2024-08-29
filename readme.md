@@ -9,7 +9,7 @@ Pokatlas was created to save time updating the atlas file after each game update
 
 ## Requirements  
 
-- [Python 3.7+](https://www.python.org/downloads/)  
+- [Python](https://www.python.org/downloads/)  
 - [PySide6](https://pypi.org/project/PySide6/)  
 - [PyQtDarkTheme](https://pypi.org/project/pyqtdarktheme/)  
 - [Pillow](https://pypi.org/project/pillow/)  
@@ -21,6 +21,6 @@ Clone the source code with `git` or download it as a .zip file.
 ```bash
 git clone https://github.com/Seth-Revz/Pokatlas.git
 cd Pokatlas
-pip install -r requirements.txt
+pip install -r requirements.txt --ignore-requires-python
 python pokatlas.py
 ```  
