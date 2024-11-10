@@ -127,35 +127,59 @@ class MainWindow(QMainWindow):
         self.toolbar = QToolBar('Main Toolbar')
         self.toolbar.setMovable(False)
         self.toolbar.toggleViewAction().setEnabled(False)
+        self.toolbar.setContextMenuPolicy(Qt.NoContextMenu)
         self.addToolBar(self.toolbar)
 
-        self.open_atlas_action = QAction('Open Atlas', self)
-        self.open_atlas_action.triggered.connect(self.openAtlas)
-        self.toolbar.addAction(self.open_atlas_action)
+        self.open_atlas_button = QToolButton(self)
+        self.open_atlas_button.setText('Open Atlas')
+        self.open_atlas_button.setVisible(True)
+        self.open_atlas_button.clicked.connect(self.openAtlas)
+        self.open_atlas_action = self.toolbar.addWidget(self.open_atlas_button)
 
-        self.replace_action = QAction('Replace Sprite', self)
-        self.replace_action.triggered.connect(self.replaceSingleSprite)
-        self.replace_action.setVisible(False)
-        self.toolbar.addAction(self.replace_action)
+        self.replace_button = QToolButton(self)
+        self.replace_button.setText('Replace Sprite')
+        self.replace_button.setVisible(False)
+        self.replace_button.clicked.connect(self.replaceSingleSprite)
+        self.replace_action = self.toolbar.addWidget(self.replace_button)
 
-        self.save_atlas_action = QAction('Save Atlas', self)
+        self.export_button = QToolButton(self)
+        self.export_button.setText("Export")
+        self.export_button.setVisible(False)
+        self.export_button.setPopupMode(QToolButton.InstantPopup)
+        self.export_button.setStyleSheet('QToolButton::menu-indicator {image: none;}')
+
+        export_menu = QMenu(self.export_button)
+
+        self.save_atlas_action = QAction('Atlas PNG', self)
         self.save_atlas_action.triggered.connect(self.saveAtlas)
-        self.save_atlas_action.setVisible(False)
-        self.toolbar.addAction(self.save_atlas_action)
+        export_menu.addAction(self.save_atlas_action)
+
+        self.save_mod_full_action = QAction('Full Mod', self)
+        self.save_mod_full_action.triggered.connect(self.saveFullMod)
+        export_menu.addAction(self.save_mod_full_action)
+
+        self.save_mod_modified_action = QAction('Modified Only Mod', self)
+        self.save_mod_modified_action.triggered.connect(self.saveModifiedMod)
+        # export_menu.addAction(self.save_mod_modified_action) # Leaving out while not supported by the game. 
+
+        self.export_button.setMenu(export_menu)
+        self.export_action = self.toolbar.addWidget(self.export_button)
 
         spacer = QWidget()
         spacer.setSizePolicy(QSizePolicy.Expanding, QSizePolicy.Expanding)
         self.toolbar.addWidget(spacer)
 
-        self.open_sprite_folder_action = QAction('Sprite Folder', self)
-        self.open_sprite_folder_action.triggered.connect(self.openSpriteFolder)
-        self.open_sprite_folder_action.setVisible(False)
-        self.toolbar.addAction(self.open_sprite_folder_action)
+        self.open_sprite_folder_button = QToolButton(self)
+        self.open_sprite_folder_button.setText('Sprite Folder')
+        self.open_sprite_folder_button.clicked.connect(self.openSpriteFolder)
+        self.open_sprite_folder_button.setVisible(False)
+        self.open_sprite_folder_action = self.toolbar.addWidget(self.open_sprite_folder_button)
 
-        self.mass_replace_action = QAction('Mass Replace', self)
-        self.mass_replace_action.triggered.connect(self.replaceMultipleSprites)
-        self.mass_replace_action.setVisible(False)
-        self.toolbar.addAction(self.mass_replace_action)
+        self.mass_replace_button = QToolButton(self)
+        self.mass_replace_button.setText('Mass Replace')
+        self.mass_replace_button.clicked.connect(self.replaceMultipleSprites)
+        self.mass_replace_button.setVisible(False)
+        self.mass_replace_action = self.toolbar.addWidget(self.mass_replace_button)
 
         widget = QWidget(self)
         layout = QVBoxLayout(widget)
@@ -239,19 +263,19 @@ class MainWindow(QMainWindow):
 
         if self.replace_action.isVisible():
             self.replace_action.setVisible(False)
-        if self.save_atlas_action.isVisible():
-            self.save_atlas_action.setVisible(False)
+        if self.export_action.isVisible():
+            self.export_action.setVisible(False)
         if not self.open_sprite_folder_action.isVisible():
             self.open_sprite_folder_action.setVisible(True)
         if not self.mass_replace_action.isVisible():
             self.mass_replace_action.setVisible(True)
-
+        
         self.refresh_timer = QTimer(self)
         self.refresh_timer.setInterval(1000)
         self.refresh_timer.timeout.connect(self.refreshSpritePreview)
 
         self.fs_watcher = QFileSystemWatcher()
-        self.fs_watcher.fileChanged.connect(self.setSaveButtonVisible)
+        self.fs_watcher.fileChanged.connect(self.setExportButtonVisible)
 
     def openAtlas(self):
 
@@ -279,6 +303,15 @@ class MainWindow(QMainWindow):
         rebuild(self.atlas)
         self.openDirectory(self.output_dir)
 
+    def saveFullMod(self):
+        check_duplicates(self.atlas)
+        export_mod_full(self.atlas)
+        self.openDirectory(self.output_dir)
+
+    def saveModifiedMod(self):
+        export_mod_modified(self.atlas)
+        self.openDirectory(self.output_dir)
+
     def searchList(self, text):
         self.proxy_model.setFilterFixedString(text)
         self.sprite_list.setRootIndex(self.proxy_model.mapFromSource(self.model.index(str(self.sprites_dir))))
@@ -296,8 +329,9 @@ class MainWindow(QMainWindow):
 
         if not self.scaleSlider.isVisible():
             self.scaleSlider.setVisible(True)
-
-        self.refresh_timer.start()
+        
+        if not self.refresh_timer.isActive():
+            self.refresh_timer.start()
 
     def refreshSpritePreview(self):
         if not self.selected_sprite_fullpath:
@@ -369,18 +403,18 @@ class MainWindow(QMainWindow):
                 print('Could not copy file')
                 return False
             else:
-                self.setSaveButtonVisible()
+                self.setExportButtonVisible()
         else:
             print('Could not remove file')
             return False
 
-    def setSaveButtonVisible(self):
-        if not self.save_atlas_action.isVisible():
-            self.save_atlas_action.setVisible(True)
+    def setExportButtonVisible(self):
+        if not self.export_action.isVisible():
+            self.export_action.setVisible(True)
 
     def openDirectory(self, path: pathlib.Path):
         path_str = str(path.absolute())
         if platform.system() == 'Windows':
-            QProcess.startDetached(f'explorer', [path_str])
+            QProcess.startDetached('explorer', [path_str])
         else:
             QDesktopServices.openUrl(path_str)

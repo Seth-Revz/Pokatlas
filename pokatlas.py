@@ -37,7 +37,7 @@ def get_atlas(path: pathlib.Path) -> Atlas:
 
         if ':' not in line:
             sprite_name = line
-            attributes = {}
+            attributes = {'name': sprite_name}
         else:
             name, value = line.strip().split(': ')
             attributes[name] = value
@@ -115,6 +115,132 @@ def rebuild(atlas: Atlas):
     output_dir.mkdir(exist_ok=True)
 
     canvas.save(output_dir / atlas.img_name)
+
+def export_mod_full(atlas: Atlas):
+    rebuild(atlas)
+
+    atlas_dir = atlas.atlas_path.parent
+    sprites_dir = atlas_dir / 'sprites'
+    output_dir = atlas.atlas_path.parent / 'output'
+    output_dir.mkdir(exist_ok=True)
+    mod_dir = output_dir / 'mod_full'
+    if mod_dir.exists() and mod_dir.is_dir():
+        shutil.rmtree(mod_dir)
+
+    atlas_mod_dir = pathlib.Path(mod_dir / 'data' / 'sprites' / 'atlas')
+    atlas_mod_dir.mkdir(exist_ok=True, parents=True)
+    atlas_text_file = atlas_mod_dir / 'main.atlas'
+
+    atlas_text_file.write_text(
+        dedent(f"""
+            {atlas.img_name}
+            size: {atlas.img_size}
+            format: {atlas.img_format}
+            filter: {atlas.img_filter}
+            repeat: {atlas.repeat}
+        """)
+    )
+
+    canvas = Image.new('RGBA', tuple(map(int, atlas.img_size.split(', '))), (255,255,255,0))
+
+    with atlas_text_file.open(mode='a') as file:
+        for sprite, attributes in atlas.get_sprites().items():
+            file.write(f"{attributes['name']}\n")
+            file.write(f"  rotate: {attributes['rotate']}\n")
+            file.write(f"  xy: {attributes['xy']}\n")
+            file.write(f"  size: {attributes['size']}\n")
+            file.write(f"  orig: {attributes['orig']}\n")
+            file.write(f"  offset: {attributes['offset']}\n")
+            file.write(f"  index: {attributes['index']}\n")
+
+            sprite_image = Image.open(sprites_dir / f'{sprite}.png')
+            canvas.paste(sprite_image, tuple(map(int, attributes['xy'].split(', '))))
+
+    canvas.save(atlas_mod_dir / atlas.img_name)
+
+    pathlib.Path(mod_dir / 'info.xml').write_text(
+        """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with Pokatlas" name="MyAtlas" version="1" weblink=""/>"""
+    )
+
+    shutil.copy('ui/icon.png', str(pathlib.Path(mod_dir / 'icon.png')))
+    
+    with zipfile.ZipFile(str(output_dir / 'FullAtlas.mod'), 'w') as zipf:
+        for file_path in mod_dir.rglob('*'):
+            if file_path.is_file():
+                zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
+
+
+def export_mod_modified(atlas: Atlas):
+    atlas_dir = atlas.atlas_path.parent
+    sprites_dir = atlas_dir / 'sprites'
+    output_dir = atlas.atlas_path.parent / 'output'
+    output_dir.mkdir(exist_ok=True)
+    mod_dir = output_dir / 'mod_partial'
+    
+    if mod_dir.exists() and mod_dir.is_dir():
+        shutil.rmtree(mod_dir)
+
+    all_sprites = atlas.get_sprites()
+    edited_sprites = []
+
+    atlas_mod_dir = pathlib.Path(mod_dir / 'data' / 'sprites' / 'atlas')
+    atlas_mod_dir.mkdir(exist_ok=True, parents=True)
+    atlas_text_file = atlas_mod_dir / 'main.atlas'
+
+    height = 0
+    width = 0
+    
+    for sprite_name in all_sprites:
+        if atlas.sprite_hashes[sprite_name] != get_image_hash(sprites_dir / f'{sprite_name}.png'):
+            edited_sprites.append(sprite_name)
+
+    for edited_sprite in edited_sprites:
+        attributes = all_sprites[edited_sprite]
+        width = max(width, int(attributes['size'].split(', ')[0]))
+        height += int(attributes['size'].split(', ')[1])
+
+    atlas_text_file.write_text(
+        dedent(f"""
+            {atlas.img_name}
+            size: {width}, {height}
+            format: {atlas.img_format}
+            filter: {atlas.img_filter}
+            repeat: {atlas.repeat}
+        """)
+    )
+
+    canvas = Image.new('RGBA', (width, height), (255,255,255,0))
+
+    current_height = 0
+    with atlas_text_file.open(mode='a') as file:
+        for edited_sprite in edited_sprites:
+            attributes = all_sprites[edited_sprite]
+
+            file.write(f"{attributes['name']}\n")
+            file.write(f"  rotate: {attributes['rotate']}\n")
+            file.write(f"  xy: {0}, {current_height}\n")
+            file.write(f"  size: {attributes['size']}\n")
+            file.write(f"  orig: {attributes['orig']}\n")
+            file.write(f"  offset: {attributes['offset']}\n")
+            file.write(f"  index: {attributes['index']}\n")
+
+            sprite_image = Image.open(sprites_dir / f'{edited_sprite}.png')
+            canvas.paste(sprite_image, (0, current_height))
+
+            current_height += int(attributes['size'].split(', ')[1])
+
+    canvas.save(atlas_mod_dir / atlas.img_name)
+
+    pathlib.Path(mod_dir / 'info.xml').write_text(
+        """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with Pokatlas" name="MyAtlas" version="1" weblink=""/>"""
+    )
+
+    shutil.copy('ui/icon.png', str(pathlib.Path(mod_dir / 'icon.png')))
+    
+    with zipfile.ZipFile(str(output_dir / 'PartialAtlas.mod'), 'w') as zipf:
+        for file_path in mod_dir.rglob('*'):
+            if file_path.is_file():
+                zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
 
 if __name__ == '__main__':
     from ui.mainwindow import MainWindow
