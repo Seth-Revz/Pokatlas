@@ -24,4 +24,6 @@ git clone https://github.com/Seth-Revz/Pokatlas.git
 cd Pokatlas
 pip install -r requirements.txt --ignore-requires-python
 python pokatlas.py
-```  
+```
+
+Or download the latest [release](https://github.com/Seth-Revz/Pokatlas/releases/latest) (Windows Only)
