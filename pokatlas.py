@@ -1,6 +1,7 @@
 import hashlib
 import pathlib
 import shutil
+import sys
 import zipfile
 from collections import Counter
 from textwrap import dedent
@@ -116,7 +117,7 @@ def rebuild(atlas: Atlas):
 
     canvas.save(output_dir / atlas.img_name)
 
-def export_mod_full(atlas: Atlas):
+def export_mod_full(atlas: Atlas, icon_path: pathlib.Path):
     rebuild(atlas)
 
     atlas_dir = atlas.atlas_path.parent
@@ -162,7 +163,7 @@ def export_mod_full(atlas: Atlas):
         """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with Pokatlas" name="MyAtlas" version="1" weblink=""/>"""
     )
 
-    shutil.copy('ui/icon.png', str(pathlib.Path(mod_dir / 'icon.png')))
+    shutil.copy(icon_path, str(pathlib.Path(mod_dir / 'icon.png')))
     
     with zipfile.ZipFile(str(output_dir / 'FullAtlas.mod'), 'w') as zipf:
         for file_path in mod_dir.rglob('*'):
@@ -170,7 +171,7 @@ def export_mod_full(atlas: Atlas):
                 zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
 
 
-def export_mod_modified(atlas: Atlas):
+def export_mod_modified(atlas: Atlas, icon_path: pathlib.Path):
     atlas_dir = atlas.atlas_path.parent
     sprites_dir = atlas_dir / 'sprites'
     output_dir = atlas.atlas_path.parent / 'output'
@@ -235,20 +236,36 @@ def export_mod_modified(atlas: Atlas):
         """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with Pokatlas" name="MyAtlas" version="1" weblink=""/>"""
     )
 
-    shutil.copy('ui/icon.png', str(pathlib.Path(mod_dir / 'icon.png')))
+    shutil.copy(icon_path, str(pathlib.Path(mod_dir / 'icon.png')))
     
     with zipfile.ZipFile(str(output_dir / 'PartialAtlas.mod'), 'w') as zipf:
         for file_path in mod_dir.rglob('*'):
             if file_path.is_file():
                 zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
 
+def resource_path(relative: pathlib.Path):
+    try:
+        base_path = pathlib.Path(sys._MEIPASS)
+    except Exception:
+        base_path = pathlib.Path('.')
+
+    return base_path / relative
+
 if __name__ == '__main__':
     from ui.mainwindow import MainWindow
     from PySide6.QtWidgets import QApplication
     import qdarktheme
 
+    try:
+        from ctypes import windll
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID('com.revz.pokatlas')
+    except ImportError:
+        pass
+
+    icon_path = resource_path(pathlib.Path('ui/icon.png'))
+
     app = QApplication()
     qdarktheme.setup_theme('dark')
-    mainwindow = MainWindow()
+    mainwindow = MainWindow(icon_path=icon_path)
     mainwindow.show()
     app.exec()

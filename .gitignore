@@ -1,3 +1,7 @@
 __pycache__
 atlas/
 .venv
+
+pokatlas.spec
+build/
+dist/

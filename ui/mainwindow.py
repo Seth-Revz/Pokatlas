@@ -108,19 +108,20 @@ class EmptyIconProvider(QFileIconProvider):
         return QIcon()
 
 class MainWindow(QMainWindow):
-    def __init__(self):
+    def __init__(self, icon_path: pathlib.Path):
         super().__init__()
         self.atlas_dir = None
         self.sprites_dir = None
         self.output_dir = None
         self.atlas = None
+        self.icon_path = icon_path
 
         self.selected_sprite_filename = None
 
         self.setupUI()
 
     def setupUI(self):
-        self.setWindowIcon(QIcon('./ui/icon.png'))
+        self.setWindowIcon(QIcon(str(self.icon_path)))
         self.setWindowTitle('Pokatlas')
         self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
@@ -305,11 +306,11 @@ class MainWindow(QMainWindow):
 
     def saveFullMod(self):
         check_duplicates(self.atlas)
-        export_mod_full(self.atlas)
+        export_mod_full(self.atlas, self.icon_path)
         self.openDirectory(self.output_dir)
 
     def saveModifiedMod(self):
-        export_mod_modified(self.atlas)
+        export_mod_modified(self.atlas, self.icon_path)
         self.openDirectory(self.output_dir)
 
     def searchList(self, text):
@@ -372,7 +373,7 @@ class MainWindow(QMainWindow):
 
     def replaceMultipleSprites(self):
         msgbox = QMessageBox()
-        msgbox.setWindowIcon(QIcon('./ui/icon.png'))
+        msgbox.setWindowIcon(QIcon(str(self.icon_path)))
         msgbox.setWindowTitle('Warning')
         msgbox.setText('Matching Sprite File Names' + ' '*30)
         msgbox.setInformativeText('Only files in the selected folder with names matching the dumped sprites will be replaced.')
