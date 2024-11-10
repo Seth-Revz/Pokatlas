@@ -1,8 +1,11 @@
-from PIL import Image
-import pathlib
 import hashlib
+import pathlib
+import shutil
+import zipfile
 from collections import Counter
+from textwrap import dedent
 
+from PIL import Image
 
 class Atlas():
     def __init__(self, atlas_path: pathlib.Path, img_name: str, img_size: str, img_format: str, img_filter: str, repeat: str):
