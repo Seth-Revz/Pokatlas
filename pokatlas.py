@@ -167,8 +167,7 @@ def export_mod_full(atlas: Atlas, icon_path: pathlib.Path):
     
     with zipfile.ZipFile(str(output_dir / 'FullAtlas.mod'), 'w') as zipf:
         for file_path in mod_dir.rglob('*'):
-            if file_path.is_file():
-                zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
+            zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
 
 
 def export_mod_modified(atlas: Atlas, icon_path: pathlib.Path):
@@ -240,8 +239,7 @@ def export_mod_modified(atlas: Atlas, icon_path: pathlib.Path):
     
     with zipfile.ZipFile(str(output_dir / 'PartialAtlas.mod'), 'w') as zipf:
         for file_path in mod_dir.rglob('*'):
-            if file_path.is_file():
-                zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
+            zipf.write(file_path, arcname=file_path.relative_to(mod_dir))
 
 def resource_path(relative: pathlib.Path):
     try:
