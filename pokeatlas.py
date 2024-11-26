@@ -160,7 +160,7 @@ def export_mod_full(atlas: Atlas, icon_path: pathlib.Path):
     canvas.save(atlas_mod_dir / atlas.img_name)
 
     pathlib.Path(mod_dir / 'info.xml').write_text(
-        """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with Pokatlas" name="MyAtlas" version="1" weblink=""/>"""
+        """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with PokeAtlas" name="MyAtlas" version="1" weblink=""/>"""
     )
 
     shutil.copy(icon_path, str(pathlib.Path(mod_dir / 'icon.png')))
@@ -232,7 +232,7 @@ def export_mod_modified(atlas: Atlas, icon_path: pathlib.Path):
     canvas.save(atlas_mod_dir / atlas.img_name)
 
     pathlib.Path(mod_dir / 'info.xml').write_text(
-        """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with Pokatlas" name="MyAtlas" version="1" weblink=""/>"""
+        """<?xml version="1.0" encoding="UTF-8" standalone="no"?>\n<resource author="Me" description="Created with PokeAtlas" name="MyAtlas" version="1" weblink=""/>"""
     )
 
     shutil.copy(icon_path, str(pathlib.Path(mod_dir / 'icon.png')))
@@ -256,7 +256,7 @@ if __name__ == '__main__':
 
     try:
         from ctypes import windll
-        windll.shell32.SetCurrentProcessExplicitAppUserModelID('com.revz.pokatlas')
+        windll.shell32.SetCurrentProcessExplicitAppUserModelID('com.revz.pokeatlas')
     except ImportError:
         pass
 

@@ -2,6 +2,6 @@ __pycache__
 atlas/
 .venv
 
-pokatlas.spec
+pokeatlas.spec
 build/
 dist/

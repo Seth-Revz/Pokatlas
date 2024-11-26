@@ -20,6 +20,7 @@ from PySide6.QtGui import (
     QPixmap, 
     QResizeEvent,
 )
+
 from PySide6.QtWidgets import (
     QFileDialog,
     QFileIconProvider,
@@ -40,7 +41,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from pokatlas import decomp, check_duplicates, rebuild, get_atlas, export_mod_full, export_mod_modified
+from pokeatlas import decomp, check_duplicates, rebuild, get_atlas, export_mod_full, export_mod_modified
 
 WINDOW_WIDTH = 800
 WINDOW_HEIGHT = 400
@@ -122,7 +123,7 @@ class MainWindow(QMainWindow):
 
     def setupUI(self):
         self.setWindowIcon(QIcon(str(self.icon_path)))
-        self.setWindowTitle('Pokatlas')
+        self.setWindowTitle('PokeAtlas')
         self.setFixedSize(WINDOW_WIDTH, WINDOW_HEIGHT)
 
         self.toolbar = QToolBar('Main Toolbar')
