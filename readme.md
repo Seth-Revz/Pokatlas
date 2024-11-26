@@ -3,10 +3,10 @@ PokeAtlas
 
 <img alt='pokeatlas_img' width=600 src='https://github.com/Seth-Revz/PokeAtlas/blob/main/.github/pokeatlas.png'>  
 
-PokeAtlas is python desktop application for decompiling the main.atlas and main.png spritesheet used in [PokeMMO themes](https://forums.pokemmo.com/index.php?/forum/33-client-customization/) into separate sprites, allowing for easy replacement of the sprites, and recompiling the main.png image using the new sprites.  
-You can choose to export as a new main.png atlas image or export as a complete importable mod.
+PokeAtlas is a python application designed to decompile the main.atlas and main.png sprite sheet used in [PokeMMO themes](https://forums.pokemmo.com/index.php?/forum/33-client-customization/) into separate sprites, making it easy to replace them.  
+Once edited, the tool recompiles the main.png image (where all the sprites are) using the updated sprites.  
 
-PokeAtlas was created to save time updating the atlas file after each game update.
+PokeAtlas was created to save time updating the atlas file after each game update. 
 
 ## Requirements  
 
